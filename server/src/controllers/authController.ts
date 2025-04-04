@@ -1,4 +1,5 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
+import { AuthRequest } from "../types/AuthRequest";
 import bcryptjs from "bcryptjs";
 import prisma from "../db/prisma";
 import { generateToken } from "../utils/generateToken";
@@ -20,15 +21,7 @@ export const signup = async (req: Request, res: Response) => {
         generateToken(newUser.id, res);
         
         if (newUser){
-            res.status(201).json({
-                user: {
-                    id: newUser.id,
-                    username: newUser.username,
-                    profilePic: newUser.profilePic,
-                    createdAt: newUser.createdAt,
-                    updatedAt: newUser.updatedAt
-                }
-            })
+            res.status(201).json({user: newUser})
         }
         else{
             res.status(400).json({ error: "Invalid Data" })
@@ -42,7 +35,6 @@ export const signup = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
     try{
         const { username, password } = req.body;
-        const hashedPassword = await bcryptjs.hash(password, 10);
         const user = await prisma.user.findUnique({where: {username}})
 
         const isMatch = await bcryptjs.compare(password, user!.password)
@@ -52,46 +44,18 @@ export const login = async (req: Request, res: Response) => {
         }
 
         generateToken(user!.id, res)
-        res.status(201).json({
-            user: {
-                id: user!.id,
-                username: user!.username,
-                profilePic: user!.profilePic,
-                createdAt: user!.createdAt,
-                updatedAt: user!.updatedAt
-            }
-        })
+        res.status(201).json({ user: user })
     } catch (error: any) {
         console.log("Error logging in: ", error.message)
         res.status(500).json({ error: "Internal Server Error" })
     }
 }
 
-export const currentUser = async (req: Request, res: Response) => {
-    const token = req.cookies.jwt;
-    if (!token){
-        res.status(401).json({ error: "Not authorized" });
-        return
-    }
-    try{
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await prisma.user.findUnique({where: {id: decoded.userId}})
-        res.status(200).json({
-            user: {
-                id: user!.id,
-                username: user!.username,
-                profilePic: user!.profilePic,
-                createdAt: user!.createdAt,
-                updatedAt: user!.updatedAt
-            }
-        })
-    } catch (error: any){
-        console.error("Error validating user session: ", error.message);
-        res.status(401).json({ error: "Invalid token" });
-    }
+export const currentUser = async (req: AuthRequest, res: Response) => {
+    res.status(200).json({ user: req.user! })
 }
 
-export const logout = async (req: Request, res: Response) => {
+export const logout = (req: Request, res: Response) => {
 	try {
 		res.cookie("jwt", "", { maxAge: 0 });
 		res.status(200).json({ message: "Logged out successfully" });

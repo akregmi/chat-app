@@ -1,17 +1,9 @@
-const { body, validationResult } = require('express-validator');
 import { Request, Response, NextFunction } from "express";
-const jwt = require('jsonwebtoken');
 import prisma from "../db/prisma";
+import { AuthRequest } from "../types/AuthRequest";
+const { body, validationResult } = require('express-validator');
+const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET
-
-interface AuthRequest extends Request {
-    user?: {
-        id: String,
-        username: String,
-        profilePic: String,
-        createdOn: Date
-    };
-}
 
 export const signUpValidator = [
     body('username').not().isEmpty().withMessage("Invalid username"),
@@ -48,7 +40,7 @@ export const userDoesntExist = async (req: Request, res: Response, next: NextFun
     next()
 }
 
-export const validSession = (req: AuthRequest, res: Response) => {
+export const validSession = async (req: AuthRequest, res: Response, next: NextFunction) => {
     const token = req.cookies.jwt;
     if (!token){
         res.status(401).json({ error: "Not authorized" });
@@ -56,7 +48,10 @@ export const validSession = (req: AuthRequest, res: Response) => {
     }
     try{
         const decoded = jwt.verify(token, JWT_SECRET);
-        res.status(200).json({userId: decoded.userId})
+        const user = await prisma.user.findUnique({where: {id: decoded.userId}})
+        if (!user) throw Error("User not found")
+        req.user = user!;
+        next()
     } catch (error: any){
         console.error("Error validating user session: ", error.message);
         res.status(401).json({ error: "Invalid token" });
