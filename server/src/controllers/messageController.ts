@@ -140,6 +140,14 @@ export const getMessages = async(req: AuthRequest, res: Response) => {
                 messages: {
                     orderBy: {
                         createdAt: "desc"
+                    },
+                    include: {
+                        sender: {
+                            select: {
+                                username: true,
+                                profilePic: true
+                            }
+                        }
                     }
                 }
             }
@@ -167,6 +175,18 @@ export const getConversations = async(req: AuthRequest, res: Response) => {
             },
             orderBy: {
                 createdAt: "desc"
+            },
+            include: {
+                members: {
+                    where: {
+                        NOT: {id: userId}
+                    },
+                    select: {
+                        id: true,
+                        username: true,
+                        profilePic: true
+                    }
+                }
             }
         })
 
