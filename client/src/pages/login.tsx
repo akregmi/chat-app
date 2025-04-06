@@ -1,15 +1,38 @@
 import { useState } from "react";
 import PasswordField from "../components/PasswordField";
 import InputField from "../components/InputField";
+import { useAuthContext } from "../context/AuthContext";
 
 const Login = () => {
+    const { setUser } = useAuthContext()
+
     const [passwordError, setpasswordError] = useState("")
     const [userError, setUserError] = useState("")
+    const [loading, setLoading] = useState(false)
     const [username, setUsername] = useState("")
     const [password, setPassword] = useState("")
 
-    const handleSubmit = () => {
-        console.log(username, password)
+
+    const handleSubmit = async () => {
+        try{
+            setLoading(true)
+            const res = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    username,
+                    password
+                })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
+            setUser(data)
+        } catch(error: any){
+            console.log(error);
+            (error.message === "User doesn't exist") ? setUserError(error.message) : setpasswordError("Something went wrong. Please try again later")
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -39,10 +62,15 @@ const Login = () => {
                     errorMessage={passwordError}
                 />
 
-                <button className="btn btn-primary my-4" onClick={handleSubmit}>Login</button>
+                <button 
+                    className="btn btn-primary my-4"
+                    disabled={loading}
+                    onClick={handleSubmit}>
+                        {loading ? "Loading..." : "Login"}
+                </button>
                 <p className="text-center text-sm text-gray-500 my-4">
                     Don’t have an account?{" "}
-                    <a href="/register" className="link link-primary">
+                    <a href="/signup" className="link link-primary">
                         Sign up
                     </a>
                 </p>

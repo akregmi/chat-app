@@ -1,23 +1,46 @@
 import { useState } from "react";
 import PasswordField from "../components/PasswordField";
 import InputField from "../components/InputField";
+import { useAuthContext } from "../context/AuthContext";
 
 const Signup = () => {
+
+    const { setUser } = useAuthContext()
     
     const [passwordError, setpasswordError] = useState("")
     const [userError, setUserError] = useState("")
+    const [loading, setLoading] = useState(false)
     const [username, setUsername] = useState("")
     const [password, setPassword] = useState("")
     const [confirmPassword, setConfirmPassword] = useState("")
 
-    const handleSignuo = () => {
+    const handleSignup = async () => {
         if (password !== confirmPassword){
             return setpasswordError("Both passwords must match")
         }
         if (password.length < 6) {
             return setpasswordError("Password must be 6 characters long")
         }
-        console.log(username, password)
+
+        try{
+            setLoading(true)
+            const res = await fetch("/api/auth/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    username,
+                    password,
+                    confirmPassword
+                })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
+            setUser(data)
+        } catch(error: any){
+            (error.message === "User already exists") ? setUserError(error.message) : setpasswordError("Something went wrong. Please try again later")
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -57,10 +80,15 @@ const Signup = () => {
                     errorMessage={passwordError}
                 />
 
-                <button className="btn btn-primary my-4" onClick={handleSignuo}>Sign Up</button>
+                <button 
+                    className="btn btn-primary my-4"
+                    disabled={loading}
+                    onClick={handleSignup}>
+                        {loading ? "Loading..." : "Sign Up"}
+                </button>
                 <p className="text-center text-sm text-gray-500 my-4">
                     Already have an account?{" "}
-                    <a href="/register" className="link link-primary">
+                    <a href="/login" className="link link-primary">
                         Log in
                     </a>
                 </p>
