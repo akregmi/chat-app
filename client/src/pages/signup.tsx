@@ -2,10 +2,11 @@ import { useState } from "react";
 import PasswordField from "../components/PasswordField";
 import InputField from "../components/InputField";
 import { useAuthContext } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
-
     const { setUser } = useAuthContext()
+    const navigate = useNavigate()
     
     const [passwordError, setpasswordError] = useState("")
     const [userError, setUserError] = useState("")
@@ -35,7 +36,8 @@ const Signup = () => {
             })
             const data = await res.json()
             if (!res.ok) throw new Error(data.error)
-            setUser(data)
+            setUser(data.user)
+            navigate('/')
         } catch(error: any){
             (error.message === "User already exists") ? setUserError(error.message) : setpasswordError("Something went wrong. Please try again later")
         } finally {

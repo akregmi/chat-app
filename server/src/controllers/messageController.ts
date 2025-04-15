@@ -139,7 +139,7 @@ export const getMessages = async(req: AuthRequest, res: Response) => {
             include: {
                 messages: {
                     orderBy: {
-                        createdAt: "desc"
+                        createdAt: "asc"
                     },
                     include: {
                         sender: {
@@ -174,7 +174,7 @@ export const getConversations = async(req: AuthRequest, res: Response) => {
                 }
             },
             orderBy: {
-                createdAt: "desc"
+                updatedAt: "desc"
             },
             include: {
                 members: {
